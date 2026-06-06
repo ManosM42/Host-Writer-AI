@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { startCheckout } from "@/lib/stripe.functions";
 
 type BillingMode = "monthly" | "annual";
 
@@ -218,22 +219,28 @@ export function PricingPage() {
               <PriceDisplay plan={plan} mode={mode} />
 
               {/* CTA */}
-              {plan.highlighted ? (
-                <Link to="/auth">
-                  <Button className="w-full gradient-gold text-background font-medium hover:opacity-90">
-                    {plan.cta}
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/auth">
-                  <Button
-                    variant="outline"
-                    className="w-full border-gold/40 text-foreground hover:bg-gold/10"
-                  >
-                    {plan.cta}
-                  </Button>
-                </Link>
-              )}
+             {plan.id === "free" ? (
+  <Link to="/auth">
+    <Button variant="outline" className="w-full border-gold/40 text-foreground hover:bg-gold/10">
+      {plan.cta}
+    </Button>
+  </Link>
+) : plan.highlighted ? (
+  <Button
+    className="w-full gradient-gold text-background font-medium hover:opacity-90"
+    onClick={() => startCheckout(plan.id, mode)}
+  >
+    {plan.cta}
+  </Button>
+) : (
+  <Button
+    variant="outline"
+    className="w-full border-gold/40 text-foreground hover:bg-gold/10"
+    onClick={() => startCheckout(plan.id, mode)}
+  >
+    {plan.cta}
+  </Button>
+)}
 
               {/* Divider */}
               <div className="border-t border-gold-soft" />

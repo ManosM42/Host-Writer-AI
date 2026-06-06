@@ -16,10 +16,16 @@ function AuthPage() {
 
   const signInGoogle = async () => {
     setBusy(true);
+
+    const redirectTo = import.meta.env.PROD
+      ? "https://host-writer-demo.vercel.app/app"
+      : "http://localhost:3000/app";
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin + "/app" },
+      options: { redirectTo },
     });
+
     if (error) {
       toast.error("Could not sign in. Please try again.");
       setBusy(false);
