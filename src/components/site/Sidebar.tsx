@@ -35,8 +35,23 @@ export function AppSidebar() {
   const profile = profileData?.profile;
   const freeLimit = profileData?.freeLimit ?? 3;
   const used = profile?.packs_used ?? 0;
-  const isPremium = profile?.plan === "premium";
+  const plan = profile?.plan ?? "free";
+  const isPaid = plan !== "free";
   const remaining = Math.max(0, freeLimit - used);
+
+  const planLabel: Record<string, string> = {
+    free: "Free",
+    starter: "Starter",
+    pro: "Pro",
+    max: "Max",
+  };
+
+  const packsLabel: Record<string, string> = {
+    free: `${remaining} of ${freeLimit} packs left`,
+    starter: "10 packs / month",
+    pro: "25 packs / month",
+    max: "Unlimited packs",
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -100,17 +115,29 @@ export function AppSidebar() {
           {instagramConnected ? "✓ Instagram connected" : "Connect Instagram"}
         </Button>
 
-        {!isPremium && (
+        {isPaid ? (
+          <div className="card-luxury rounded-lg p-3">
+            <div className="text-xs text-muted-foreground">Current plan</div>
+            <div className="text-sm font-medium text-gold">{planLabel[plan] ?? plan}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{packsLabel[plan]}</div>
+            <Link to="/pricing">
+              <Button size="sm" variant="outline" className="w-full mt-2 border-gold/40 text-gold hover:bg-gold/10 h-8 text-xs">
+                Manage plan
+              </Button>
+            </Link>
+          </div>
+        ) : (
           <div className="card-luxury rounded-lg p-3">
             <div className="text-xs text-muted-foreground">Free plan</div>
-            <div className="text-sm font-medium">
-              {remaining} of {freeLimit} packs left
-            </div>
-            <Button size="sm" className="w-full mt-2 gradient-gold text-background font-medium h-8 text-xs">
-              Upgrade · €29/mo
-            </Button>
+            <div className="text-sm font-medium">{remaining} of {freeLimit} packs left</div>
+            <Link to="/pricing">
+              <Button size="sm" className="w-full mt-2 gradient-gold text-background font-medium h-8 text-xs">
+                Upgrade plan
+              </Button>
+            </Link>
           </div>
         )}
+
         <div className="flex items-center gap-3 px-2">
           <Avatar className="size-8">
             <AvatarImage src={profile?.avatar_url ?? undefined} />
