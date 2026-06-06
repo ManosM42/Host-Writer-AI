@@ -1,7 +1,10 @@
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" as any });
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { 
+  apiVersion: "2024-04-10",
+  httpClient: Stripe.createFetchHttpClient(),
+});
 
 const PRICE_TO_PLAN: Record<string, { plan: string; period: string }> = {
   "price_1TfGob1KsXiRNqhDysKV8VEr": { plan: "starter", period: "monthly" },
@@ -16,6 +19,8 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
+
 Deno.serve(async (req) => {
   const body = await req.text();
   const sig  = req.headers.get("stripe-signature")!;
@@ -26,7 +31,9 @@ Deno.serve(async (req) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
+    event = await stripe.webhooks.constructEventAsync(
+      body, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!, undefined, cryptoProvider
+    );
   } catch (err) {
     console.error("Webhook signature error:", String(err));
     return new Response(`Bad signature: ${String(err)}`, { status: 400 });
@@ -38,9 +45,9 @@ Deno.serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const subId  = session.subscription as string;
-        
+
         console.log("checkout.session.completed - userId:", userId, "subId:", subId);
-        
+
         if (!userId || !subId) {
           console.error("Missing userId or subId in metadata");
           break;
@@ -60,7 +67,7 @@ Deno.serve(async (req) => {
         }).eq("id", userId);
 
         if (error) console.error("Supabase update error:", error);
-        else console.log("Profile updated successfully for user:", userId);
+        else console.log("Profile updated for user:", userId);
         break;
       }
 
@@ -70,9 +77,9 @@ Deno.serve(async (req) => {
         const mapped   = priceId ? PRICE_TO_PLAN[priceId] : null;
         const customer = await stripe.customers.retrieve(sub.customer as string);
         const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
-        
+
         console.log("subscription.updated - userId:", userId, "priceId:", priceId);
-        
+
         if (!userId) break;
 
         const { error } = await supabase.from("profiles").update({
@@ -89,9 +96,9 @@ Deno.serve(async (req) => {
         const sub = event.data.object as Stripe.Subscription;
         const customer = await stripe.customers.retrieve(sub.customer as string);
         const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
-        
+
         console.log("subscription.deleted - userId:", userId);
-        
+
         if (!userId) break;
 
         const { error } = await supabase.from("profiles").update({
