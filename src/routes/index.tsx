@@ -34,6 +34,11 @@ function Index() {
         <Link to="/auth">
           <Button variant="ghost" className="text-foreground/80 hover:text-gold hover:bg-gold/10">Sign in</Button>
         </Link>
+        <Link to="/pricing">
+  <Button variant="ghost" className="text-foreground/80 hover:text-gold hover:bg-gold/10">
+    Pricing
+  </Button>
+</Link>
       </header>
 
       {/* Hero */}
