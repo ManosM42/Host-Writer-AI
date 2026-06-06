@@ -1,7 +1,7 @@
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-04-10" });
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" as any });
 
 const PRICE_TO_PLAN: Record<string, { plan: string; period: string }> = {
   "price_1TfGob1KsXiRNqhDysKV8VEr": { plan: "starter", period: "monthly" },
@@ -20,63 +20,94 @@ Deno.serve(async (req) => {
   const body = await req.text();
   const sig  = req.headers.get("stripe-signature")!;
 
+  if (!sig) {
+    return new Response("No signature", { status: 400 });
+  }
+
   let event: Stripe.Event;
   try {
-    event = await stripe.webhooks.constructEventAsync(body, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
-  } catch {
-    return new Response("Bad signature", { status: 400 });
+    event = stripe.webhooks.constructEvent(body, sig, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
+  } catch (err) {
+    console.error("Webhook signature error:", String(err));
+    return new Response(`Bad signature: ${String(err)}`, { status: 400 });
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.supabase_user_id;
-      const subId  = session.subscription as string;
-      if (!userId || !subId) break;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.supabase_user_id;
+        const subId  = session.subscription as string;
+        
+        console.log("checkout.session.completed - userId:", userId, "subId:", subId);
+        
+        if (!userId || !subId) {
+          console.error("Missing userId or subId in metadata");
+          break;
+        }
 
-      const sub = await stripe.subscriptions.retrieve(subId);
-      const priceId = sub.items.data[0]?.price.id;
-      const mapped  = priceId ? PRICE_TO_PLAN[priceId] : null;
+        const sub = await stripe.subscriptions.retrieve(subId);
+        const priceId = sub.items.data[0]?.price.id;
+        const mapped  = priceId ? PRICE_TO_PLAN[priceId] : null;
 
-      await supabase.from("profiles").update({
-        plan: mapped?.plan ?? "starter",
-        plan_period: mapped?.period ?? "monthly",
-        stripe_subscription_id: subId,
-        packs_used: 0,
-      }).eq("id", userId);
-      break;
+        console.log("priceId:", priceId, "mapped:", mapped);
+
+        const { error } = await supabase.from("profiles").update({
+          plan: mapped?.plan ?? "starter",
+          plan_period: mapped?.period ?? "monthly",
+          stripe_subscription_id: subId,
+          packs_used: 0,
+        }).eq("id", userId);
+
+        if (error) console.error("Supabase update error:", error);
+        else console.log("Profile updated successfully for user:", userId);
+        break;
+      }
+
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        const priceId  = sub.items.data[0]?.price.id;
+        const mapped   = priceId ? PRICE_TO_PLAN[priceId] : null;
+        const customer = await stripe.customers.retrieve(sub.customer as string);
+        const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
+        
+        console.log("subscription.updated - userId:", userId, "priceId:", priceId);
+        
+        if (!userId) break;
+
+        const { error } = await supabase.from("profiles").update({
+          plan: mapped?.plan ?? "starter",
+          plan_period: mapped?.period ?? "monthly",
+          stripe_subscription_id: sub.id,
+        }).eq("id", userId);
+
+        if (error) console.error("Supabase update error:", error);
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+        const customer = await stripe.customers.retrieve(sub.customer as string);
+        const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
+        
+        console.log("subscription.deleted - userId:", userId);
+        
+        if (!userId) break;
+
+        const { error } = await supabase.from("profiles").update({
+          plan: "free",
+          plan_period: null,
+          stripe_subscription_id: null,
+        }).eq("id", userId);
+
+        if (error) console.error("Supabase update error:", error);
+        break;
+      }
     }
-
-    case "customer.subscription.updated": {
-      const sub = event.data.object as Stripe.Subscription;
-      const priceId  = sub.items.data[0]?.price.id;
-      const mapped   = priceId ? PRICE_TO_PLAN[priceId] : null;
-      const customer = await stripe.customers.retrieve(sub.customer as string);
-      const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
-      if (!userId) break;
-
-      await supabase.from("profiles").update({
-        plan: mapped?.plan ?? "starter",
-        plan_period: mapped?.period ?? "monthly",
-        stripe_subscription_id: sub.id,
-      }).eq("id", userId);
-      break;
-    }
-
-    case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription;
-      const customer = await stripe.customers.retrieve(sub.customer as string);
-      const userId   = (customer as Stripe.Customer).metadata?.supabase_user_id;
-      if (!userId) break;
-
-      await supabase.from("profiles").update({
-        plan: "free",
-        plan_period: null,
-        stripe_subscription_id: null,
-      }).eq("id", userId);
-      break;
-    }
+  } catch (err) {
+    console.error("Handler error:", String(err));
+    return new Response(`Handler error: ${String(err)}`, { status: 500 });
   }
 
-  return new Response("ok");
+  return new Response("ok", { status: 200 });
 });
