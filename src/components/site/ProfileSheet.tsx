@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile } from "@/lib/packs.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { User, Camera, CreditCard, Check, Sparkles, Zap, Crown, Star } from "lucide-react";
+import { User, Camera, CreditCard, Check, Sparkles, Zap, Crown, Star, Calendar } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 const PLAN_CONFIG: Record<string, {
@@ -54,8 +54,11 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const { data: profileData } = useQuery({
+  const { data: profileData, isLoading } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => getMyProfile(),
   });
@@ -64,20 +67,23 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
   const plan = profile?.plan ?? "free";
   const planConfig = PLAN_CONFIG[plan] ?? PLAN_CONFIG.free;
 
-  const [name, setName] = useState(profile?.name ?? "");
-  const [bio, setBio] = useState(profile?.bio ?? "");
-
-  // sync when profile loads
-  useState(() => {
+  // Sync form when profile loads
+  useEffect(() => {
     if (profile) {
       setName(profile.name ?? "");
       setBio((profile as any).bio ?? "");
+      setAvatarPreview(null);
     }
-  });
+  }, [profile]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -91,12 +97,14 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
 
     if (uploadErr) {
       toast.error("Could not upload image.");
+      setAvatarPreview(null);
       return;
     }
 
     const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+    const urlWithBust = `${publicUrl}?t=${Date.now()}`;
 
-    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+    await supabase.from("profiles").update({ avatar_url: urlWithBust }).eq("id", user.id);
     qc.invalidateQueries({ queryKey: ["my-profile"] });
     toast.success("Profile photo updated.");
   };
@@ -104,7 +112,7 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setSaving(false); return; }
 
     const { error } = await supabase
       .from("profiles")
@@ -130,6 +138,15 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
     }
   };
 
+  // Format renewal date from subscription
+  const renewalDate = (profile as any)?.subscription_period_end
+    ? new Date((profile as any).subscription_period_end * 1000).toLocaleDateString("el-GR", {
+        day: "numeric", month: "long", year: "numeric"
+      })
+    : null;
+
+  const periodLabel = (profile as any)?.plan_period === "annual" ? "Annual" : "Monthly";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md overflow-y-auto bg-background border-gold/20">
@@ -138,17 +155,17 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
         </SheetHeader>
 
         {/* Avatar */}
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div className="flex flex-col items-center gap-3 mb-6">
           <div className="relative">
             <Avatar className="size-20">
-              <AvatarImage src={profile?.avatar_url ?? undefined} />
+              <AvatarImage src={avatarPreview ?? profile?.avatar_url ?? undefined} />
               <AvatarFallback className="bg-gold/20 text-gold text-xl">
                 {profile?.name?.[0]?.toUpperCase() ?? <User className="size-6" />}
               </AvatarFallback>
             </Avatar>
             <button
               onClick={() => fileRef.current?.click()}
-              className="absolute -bottom-1 -right-1 size-7 rounded-full gradient-gold flex items-center justify-center shadow-lg"
+              className="absolute -bottom-1 -right-1 size-7 rounded-full gradient-gold flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity"
             >
               <Camera className="size-3.5 text-background" />
             </button>
@@ -156,17 +173,21 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
           </div>
           <div className="text-center">
             <div className="font-medium">{profile?.name ?? "Account"}</div>
-            <div className="text-xs text-muted-foreground">{profile?.email}</div>
+            <div className="text-xs text-muted-foreground">{(profile as any)?.email}</div>
+            {(profile as any)?.bio && (
+              <div className="text-xs text-muted-foreground mt-1 max-w-[260px]">{(profile as any).bio}</div>
+            )}
           </div>
         </div>
 
         {/* Plan badge */}
-        <div className={`flex items-center gap-2 w-fit mx-auto px-3 py-1.5 rounded-full border text-xs font-medium mb-8 ${planConfig.color}`}>
+        <div className={`flex items-center gap-2 w-fit mx-auto px-3 py-1.5 rounded-full border text-xs font-medium mb-6 ${planConfig.color}`}>
           {planConfig.icon}
           {planConfig.label} Plan
+          {plan !== "free" && <span className="opacity-60">· {periodLabel}</span>}
         </div>
 
-        {/* Plan perks */}
+        {/* Plan card */}
         <div className="card-luxury rounded-xl p-4 mb-6">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Your privileges</div>
           <div className="space-y-2">
@@ -179,7 +200,16 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t border-gold-soft">
+
+          {/* Renewal date */}
+          {plan !== "free" && renewalDate && (
+            <div className="mt-3 pt-3 border-t border-gold-soft flex items-center gap-2 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              Next renewal: {renewalDate}
+            </div>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-gold-soft space-y-2">
             {plan === "free" ? (
               <Link to="/pricing" onClick={() => onOpenChange(false)}>
                 <Button size="sm" className="w-full gradient-gold text-background font-medium h-8 text-xs">
@@ -187,16 +217,21 @@ export function ProfileSheet({ open, onOpenChange }: Props) {
                 </Button>
               </Link>
             ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full border-gold/40 text-gold hover:bg-gold/10 h-8 text-xs"
-                onClick={handlePortal}
-                disabled={portalLoading}
-              >
-                <CreditCard className="size-3.5 mr-2" />
-                {portalLoading ? "Opening..." : "Manage billing"}
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-gold/40 text-gold hover:bg-gold/10 h-8 text-xs"
+                  onClick={handlePortal}
+                  disabled={portalLoading}
+                >
+                  <CreditCard className="size-3.5 mr-2" />
+                  {portalLoading ? "Opening..." : "Manage billing"}
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Cancel anytime — you keep access until {renewalDate ?? "end of period"}
+                </p>
+              </>
             )}
           </div>
         </div>
