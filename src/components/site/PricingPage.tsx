@@ -3,6 +3,7 @@ import { Check, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { startCheckout } from "@/lib/stripe.functions";
+import { toast } from "sonner";
 
 type BillingMode = "monthly" | "annual";
 
@@ -218,8 +219,8 @@ export function PricingPage() {
               {/* Price */}
               <PriceDisplay plan={plan} mode={mode} />
 
-              {/* CTA */}
-             {plan.id === "free" ? (
+           {/* CTA */}
+{plan.id === "free" ? (
   <Link to="/auth">
     <Button variant="outline" className="w-full border-gold/40 text-foreground hover:bg-gold/10">
       {plan.cta}
@@ -228,7 +229,17 @@ export function PricingPage() {
 ) : plan.highlighted ? (
   <Button
     className="w-full gradient-gold text-background font-medium hover:opacity-90"
-    onClick={() => startCheckout(plan.id, mode)}
+    onClick={async () => {
+      try {
+        await startCheckout(plan.id, mode);
+      } catch (e: any) {
+        if (e.message === "NOT_LOGGED_IN") {
+          window.location.href = "/auth?next=pricing";
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+      }
+    }}
   >
     {plan.cta}
   </Button>
@@ -236,7 +247,17 @@ export function PricingPage() {
   <Button
     variant="outline"
     className="w-full border-gold/40 text-foreground hover:bg-gold/10"
-    onClick={() => startCheckout(plan.id, mode)}
+    onClick={async () => {
+      try {
+        await startCheckout(plan.id, mode);
+      } catch (e: any) {
+        if (e.message === "NOT_LOGGED_IN") {
+          window.location.href = "/auth?next=pricing";
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+      }
+    }}
   >
     {plan.cta}
   </Button>

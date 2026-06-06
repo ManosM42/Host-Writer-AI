@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/site/Logo";
@@ -17,13 +17,17 @@ function AuthPage() {
   const signInGoogle = async () => {
     setBusy(true);
 
-    const redirectTo = import.meta.env.PROD
-      ? "https://host-writer-demo.vercel.app/app"
-      : "http://localhost:3000/app";
+    // Check if came from pricing page
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") ?? "app";
+
+    const base = import.meta.env.PROD
+      ? "https://host-writer-demo.vercel.app"
+      : "http://localhost:3000";
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo },
+      options: { redirectTo: `${base}/${next}` },
     });
 
     if (error) {
