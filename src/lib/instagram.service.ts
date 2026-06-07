@@ -6,7 +6,7 @@ export type InstagramCredentials = {
   instagramUsername: string;
 };
 
-// Save Instagram credentials for user (stored in Supabase)
+// ── Credentials ────────────────────────────────────────────────────────────
 export async function saveInstagramCredentials(credentials: InstagramCredentials) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -27,7 +27,6 @@ export async function saveInstagramCredentials(credentials: InstagramCredentials
   if (error) throw new Error(error.message);
 }
 
-// Get saved Instagram credentials
 export async function getInstagramCredentials(): Promise<InstagramCredentials | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -48,46 +47,50 @@ export async function getInstagramCredentials(): Promise<InstagramCredentials | 
   };
 }
 
-// Format caption beautifully with emojis and hashtags
+// ── Upload image to Supabase Storage → get public URL ─────────────────────
+export async function uploadImageForInstagram(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `instagram/${user.id}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("post-images")
+    .upload(path, file, { contentType: file.type, upsert: true });
+
+  if (error) throw new Error("Image upload failed: " + error.message);
+
+  const { data: urlData } = supabase.storage
+    .from("post-images")
+    .getPublicUrl(path);
+
+  if (!urlData?.publicUrl) throw new Error("Could not get public URL for image");
+
+  return urlData.publicUrl;
+}
+
+// ── Caption formatter ──────────────────────────────────────────────────────
 export function formatInstagramCaption(
   caption: string,
   businessName: string,
   location: string,
   vibe: string
 ): string {
-  // Get emoji based on vibe
-  const vibe_emoji: Record<string, string> = {
-    Luxury: "✨",
-    "Family-friendly": "👨‍👩‍👧‍👦",
-    Romantic: "💕",
-    Rustic: "🌾",
-    Modern: "🏢",
+  const vibeEmoji: Record<string, string> = {
+    Luxury: "✨", "Family-friendly": "👨‍👩‍👧‍👦",
+    Romantic: "💕", Rustic: "🌾", Modern: "🏢",
+    Boho: "🌸", Minimalist: "🤍",
   };
 
-  const emoji = vibe_emoji[vibe] || "✨";
-
-  // Build hashtags based on vibe and location
+  const emoji = vibeEmoji[vibe] ?? "✨";
   const hashtags = generateHashtags(vibe, location);
 
-  // Format the caption
-  return `${emoji} ${caption}
-
-📍 ${location}
-
-${hashtags}
-
-#${businessName.replace(/\s+/g, "")}`;
+  return `${emoji} ${caption}\n\n📍 ${location}\n\n${hashtags}\n\n#${businessName.replace(/\s+/g, "")}`;
 }
 
-// Generate relevant hashtags
 function generateHashtags(vibe: string, location: string): string {
-  const baseHashtags = [
-    "#Greece",
-    "#GreekHospitality",
-    "#Travel",
-    "#VacationRental",
-    "#Staycation",
-  ];
+  const base = ["#Greece", "#GreekHospitality", "#Travel", "#VacationRental", "#Staycation"];
 
   const vibeHashtags: Record<string, string[]> = {
     Luxury: ["#LuxuryStay", "#HighEnd", "#Exclusive", "#Prestige"],
@@ -95,63 +98,58 @@ function generateHashtags(vibe: string, location: string): string {
     Romantic: ["#RomanticGetaway", "#CoupleGoals", "#HoneymoonDestination"],
     Rustic: ["#RusticCharm", "#AuthenticGreece", "#TraditionalStyle"],
     Modern: ["#ModernDesign", "#ContemporaryStyle", "#DesignerHome"],
+    Boho: ["#BohoStyle", "#FreeSpirit", "#NaturalLiving"],
+    Minimalist: ["#MinimalistDesign", "#LessIsMore", "#CleanAesthetic"],
   };
 
-  const locationHashtags = location
+  const locationTags = location
     .split(",")
-    .map((loc) => `#${loc.trim().replace(/\s+/g, "")}`)
+    .map((l) => `#${l.trim().replace(/\s+/g, "")}`)
     .slice(0, 2);
 
-  const selected = [
-    ...baseHashtags,
-    ...(vibeHashtags[vibe] || []),
-    ...locationHashtags,
-  ];
-
-  return selected.join(" ");
+  return [...base, ...(vibeHashtags[vibe] ?? []), ...locationTags].join(" ");
 }
 
-// Post to Instagram Feed using Graph API
+// ── Post to Instagram via Graph API ───────────────────────────────────────
 export async function postToInstagramFeed(
   caption: string,
-  imageUrl: string, // URL of the image
+  imageUrl: string
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
   const credentials = await getInstagramCredentials();
   if (!credentials) {
-    return { success: false, error: "Instagram not connected. Connect your account first." };
+    return { success: false, error: "Instagram not connected." };
   }
 
   try {
     // Step 1: Create media container
-    const mediaCreateRes = await fetch(
+    const containerRes = await fetch(
       `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image_url: imageUrl,
-          caption: caption,
+          caption,
           access_token: credentials.accessToken,
         }),
       }
     );
 
-    if (!mediaCreateRes.ok) {
-      const err = await mediaCreateRes.json();
-      throw new Error(err.error?.message || "Failed to create media");
+    if (!containerRes.ok) {
+      const err = await containerRes.json();
+      throw new Error(err.error?.message ?? "Failed to create media container");
     }
 
-    const mediaData = await mediaCreateRes.json();
-    const mediaId = mediaData.id;
+    const { id: creationId } = await containerRes.json();
 
-    // Step 2: Publish the media
+    // Step 2: Publish
     const publishRes = await fetch(
       `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media_publish`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          creation_id: mediaId,
+          creation_id: creationId,
           access_token: credentials.accessToken,
         }),
       }
@@ -159,25 +157,73 @@ export async function postToInstagramFeed(
 
     if (!publishRes.ok) {
       const err = await publishRes.json();
-      throw new Error(err.error?.message || "Failed to publish post");
+      throw new Error(err.error?.message ?? "Failed to publish post");
     }
 
-    const publishData = await publishRes.json();
+    const { id: postId } = await publishRes.json();
 
-    return {
-      success: true,
-      postId: publishData.id,
-    };
-  } catch (error) {
-    console.error("Instagram posting error:", error);
+    // Step 3: Save post record to Supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("instagram_posts").insert({
+        user_id: user.id,
+        post_id: postId,
+        caption,
+        image_url: imageUrl,
+        posted_at: new Date().toISOString(),
+      });
+    }
+
+    return { success: true, postId };
+  } catch (err) {
+    console.error("Instagram post error:", err);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to post to Instagram",
+      error: err instanceof Error ? err.message : "Unknown error",
     };
   }
 }
 
-// Get Instagram OAuth URL for user to connect account
+// ── Fetch Instagram insights ───────────────────────────────────────────────
+export async function getInstagramInsights(plan: string) {
+  const credentials = await getInstagramCredentials();
+  if (!credentials) return null;
+
+  try {
+    // Basic: follower count + recent media count
+    const accountRes = await fetch(
+      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}?fields=followers_count,media_count,username&access_token=${credentials.accessToken}`
+    );
+    const account = await accountRes.json();
+
+    if (plan === "starter" || plan === "free") {
+      return { basic: account };
+    }
+
+    // Pro: add reach + impressions from last 30 days
+    const insightsRes = await fetch(
+      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/insights?metric=reach,impressions,profile_views&period=day&since=${Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000)}&until=${Math.floor(Date.now() / 1000)}&access_token=${credentials.accessToken}`
+    );
+    const insights = await insightsRes.json();
+
+    if (plan === "pro") {
+      return { basic: account, insights: insights.data };
+    }
+
+    // Max: also fetch top media
+    const mediaRes = await fetch(
+      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media?fields=id,caption,like_count,comments_count,timestamp,media_url,permalink&limit=9&access_token=${credentials.accessToken}`
+    );
+    const media = await mediaRes.json();
+
+    return { basic: account, insights: insights.data, topMedia: media.data };
+  } catch (err) {
+    console.error("Instagram insights error:", err);
+    return null;
+  }
+}
+
+// ── OAuth URL ──────────────────────────────────────────────────────────────
 export function getInstagramOAuthUrl(redirectUri: string): string {
   const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID;
   if (!clientId) throw new Error("Instagram App ID not configured");
@@ -185,7 +231,7 @@ export function getInstagramOAuthUrl(redirectUri: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "instagram_business_basic,instagram_business_content_publish",
+    scope: "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights",
     response_type: "code",
   });
 
