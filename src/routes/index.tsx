@@ -23,13 +23,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HostWriter AI — Marketing packs for Greek hospitality" },
+      { title: "MedierAI — Marketing packs for Greek hospitality" },
       {
         name: "description",
         content:
           "AI-crafted listing copy, social media, emails and ads for Greek villas, taverns and boutique hotels — in 30 seconds.",
       },
-      { property: "og:title", content: "HostWriter AI" },
+      { property: "og:title", content: "AI" },
       {
         property: "og:description",
         content: "AI-crafted marketing packs for Greek tourism businesses.",
@@ -616,7 +616,7 @@ function Index() {
           color: "rgba(255,255,255,0.3)",
         }}
       >
-        © {new Date().getFullYear()} HostWriter AI · For the hospitality of Greece
+        © {new Date().getFullYear()} MedierAI · For the hospitality of Greece
       </footer>
     </div>
   );

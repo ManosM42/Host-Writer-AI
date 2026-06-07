@@ -159,7 +159,7 @@ export function ConnectInstagramDialog({
             </div>
             <h3 className="font-display text-xl">Connected!</h3>
             <p className="text-sm text-muted-foreground">
-              You can now post directly to Instagram from HostWriter
+              You can now post directly to Instagram from MedierAI
             </p>
           </div>
         )}

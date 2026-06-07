@@ -7,7 +7,7 @@ import { Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — HostWriter AI" }] }),
+  head: () => ({ meta: [{ title: "Sign in — MedierAI" }] }),
   component: AuthPage,
 });
 
@@ -52,7 +52,7 @@ function AuthPage() {
             <div className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-gold/80 mb-3">
               <Sparkles className="size-3" /> Welcome
             </div>
-            <h1 className="font-display text-3xl">Sign in to HostWriter</h1>
+            <h1 className="font-display text-3xl">Sign in to MedierAI</h1>
             <p className="text-muted-foreground text-sm mt-2">Generate your full marketing pack in 30 seconds.</p>
           </div>
           <Button

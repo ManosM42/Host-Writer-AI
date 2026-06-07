@@ -1,15 +1,16 @@
 import { Link } from "@tanstack/react-router";
+import logoSrc from "@/assets/medier-logo.jpg";
 
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <Link to="/" className={`flex items-center gap-2 ${className}`}>
-      <div className="relative">
-        <div className="size-8 rounded-md gradient-gold flex items-center justify-center text-background font-display font-bold text-lg shadow-lg">
-          H
-        </div>
-      </div>
+    <Link to="/" className={`flex items-center gap-2.5 ${className}`}>
+      <img
+        src={logoSrc}
+        alt=""
+        className="h-9 w-auto object-contain"
+      />
       <span className="font-display text-lg tracking-tight">
-        HostWriter <span className="text-gradient-gold">AI</span>
+        Medier <span className="text-gradient-gold">AI</span>
       </span>
     </Link>
   );
