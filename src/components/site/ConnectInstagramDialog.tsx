@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getInstagramOAuthUrl } from "@/services/instagram.service";
+import { getInstagramOAuthUrl } from "@/lib/instagram.service";
 
 export function ConnectInstagramDialog({
   open,
