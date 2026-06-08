@@ -28,12 +28,14 @@ export function ConnectInstagramDialog({
     const params = new URLSearchParams({
       client_id: import.meta.env.VITE_INSTAGRAM_APP_ID,
       redirect_uri: redirectUri,
-      scope: "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights",
+      scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
+
       response_type: "code",
       state: session.access_token, // pass JWT so Edge Function knows who the user is
     });
 
-    window.location.href = `https://api.instagram.com/oauth/authorize?${params}`;
+    window.location.href = `https://www.facebook.com/v20.0/dialog/oauth?${params}`;
+
   };
 
   // Check for ?ig=connected on return from OAuth
