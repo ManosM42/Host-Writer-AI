@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getInstagramOAuthUrl } from "@/services/instagram.service";
 
 export function ConnectInstagramDialog({
   open,
@@ -16,6 +17,22 @@ export function ConnectInstagramDialog({
 }) {
   const [step, setStep] = useState<"intro" | "success">("intro");
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("ig") === "connected") {
+      setStep("success");
+      onConnected?.();
+    } else if (url.searchParams.get("ig") === "error") {
+      const msg = url.searchParams.get("message") ?? "Connection failed";
+      toast.error(msg);
+    }
+    if (url.searchParams.has("ig")) {
+      url.searchParams.delete("ig");
+      url.searchParams.delete("message");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
   const handleOAuthConnect = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -24,36 +41,13 @@ export function ConnectInstagramDialog({
     }
 
     const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-oauth`;
+    const oauthUrl = getInstagramOAuthUrl(redirectUri);
 
-    const params = new URLSearchParams({
-      client_id: import.meta.env.VITE_INSTAGRAM_APP_ID,
-      redirect_uri: redirectUri,
-      scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
+    const url = new URL(oauthUrl);
+    url.searchParams.set("state", session.access_token);
 
-      response_type: "code",
-      state: session.access_token, // pass JWT so Edge Function knows who the user is
-    });
-
-    window.location.href = `https://www.facebook.com/v20.0/dialog/oauth?${params}`;
-
+    window.location.href = url.toString();
   };
-
-  // Check for ?ig=connected on return from OAuth
-  useState(() => {
-  const url = new URL(window.location.href);
-  if (url.searchParams.get("ig") === "connected") {
-    setStep("success");
-    onConnected?.();
-  } else if (url.searchParams.get("ig") === "error") {
-    const msg = url.searchParams.get("message") ?? "Connection failed";
-    toast.error(msg);
-  }
-  if (url.searchParams.has("ig")) {
-    url.searchParams.delete("ig");
-    url.searchParams.delete("message");
-    window.history.replaceState({}, "", url.toString());
-  }
-});
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
