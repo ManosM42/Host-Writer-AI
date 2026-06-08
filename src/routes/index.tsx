@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
         content:
           "AI-crafted listing copy, social media, emails and ads for Greek villas, taverns and boutique hotels — in 30 seconds.",
       },
-      { property: "og:title", content: "AI" },
+      { property: "og:title", content: "MedierAI" },
       {
         property: "og:description",
         content: "AI-crafted marketing packs for Greek tourism businesses.",
@@ -73,9 +73,7 @@ function BackgroundVideo() {
         playsInline
         className="w-full h-full object-cover opacity-40"
       />
-      {/* Gold gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/80" />
-      {/* Subtle gold vignette */}
       <div
         className="absolute inset-0"
         style={{
@@ -106,6 +104,12 @@ const glassPill: React.CSSProperties = {
   border: "1px solid rgba(201,148,10,0.3)",
 };
 
+// ── Smooth scroll helper ───────────────────────────────────────────────────
+function scrollTo(id: string) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 // ── Navbar ─────────────────────────────────────────────────────────────────
 function Navbar() {
   return (
@@ -123,15 +127,24 @@ function Navbar() {
         <div className="flex items-center gap-8">
           <Logo />
           <div className="hidden md:flex items-center gap-8">
-            {["Features", "Pricing", "About"].map((item) => (
-              <Link
-                key={item}
-                to={item === "Pricing" ? "/pricing" : "/"}
-                className="text-white/70 text-sm font-medium hover:text-[#D4A012] transition-colors duration-300"
-              >
-                {item}
-              </Link>
-            ))}
+            <button
+              onClick={() => scrollTo("features")}
+              className="text-white/70 text-sm font-medium hover:text-[#D4A012] transition-colors duration-300"
+            >
+              Features
+            </button>
+            <Link
+              to="/pricing"
+              className="text-white/70 text-sm font-medium hover:text-[#D4A012] transition-colors duration-300"
+            >
+              Pricing
+            </Link>
+            <button
+              onClick={() => scrollTo("about")}
+              className="text-white/70 text-sm font-medium hover:text-[#D4A012] transition-colors duration-300"
+            >
+              About
+            </button>
           </div>
         </div>
         {/* Right */}
@@ -284,16 +297,14 @@ function Index() {
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
 
-      {/* ── HERO SECTION (fullscreen video bg) ── */}
+      {/* ── HERO ── */}
       <section className="relative h-screen flex flex-col overflow-hidden">
         <BackgroundVideo />
         <Navbar />
 
-        {/* Hero content */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
           <div className="max-w-5xl mx-auto flex flex-col items-center gap-8">
 
-            {/* Badge */}
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -304,7 +315,6 @@ function Index() {
               For Greek Hospitality · AI Marketing
             </motion.p>
 
-            {/* Heading */}
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -312,8 +322,7 @@ function Index() {
               className="text-4xl md:text-[64px] font-medium tracking-[-0.02em] leading-[1.05]"
               style={{
                 fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif",
-                background:
-                  "linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.7) 100%)",
+                background: "linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.7) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -324,8 +333,7 @@ function Index() {
               <span
                 style={{
                   fontStyle: "italic",
-                  background:
-                    "linear-gradient(135deg, #F5E09A 0%, #D4A012 45%, #8B6000 100%)",
+                  background: "linear-gradient(135deg, #F5E09A 0%, #D4A012 45%, #8B6000 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -335,7 +343,6 @@ function Index() {
               </span>
             </motion.h1>
 
-            {/* Subtitle */}
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -348,7 +355,6 @@ function Index() {
               tavern, your guests.
             </motion.p>
 
-            {/* CTA */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -361,27 +367,27 @@ function Index() {
               </p>
             </motion.div>
 
-            {/* Scroll hint */}
-            <motion.div
+            <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.8 }}
-              className="text-xs font-medium tracking-wide cursor-pointer transition-colors duration-300"
+              onClick={() => scrollTo("features")}
+              className="text-xs font-medium tracking-wide cursor-pointer transition-colors duration-300 hover:text-[#D4A012]"
               style={{ color: "rgba(255,255,255,0.45)" }}
             >
               ↓ See what's inside every pack
-            </motion.div>
+            </motion.button>
           </div>
         </div>
 
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
+        <div
+          className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
           style={{ background: "linear-gradient(to bottom, transparent, #000)" }}
         />
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="container mx-auto max-w-6xl px-5 py-24">
+      <section id="features" className="container mx-auto max-w-6xl px-5 py-24">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -466,36 +472,21 @@ function Index() {
           </h3>
           <div className="grid sm:grid-cols-2 gap-8">
             <div>
-              <div
-                className="text-xs uppercase tracking-wider mb-2"
-                style={{ color: "rgba(212,160,18,0.8)" }}
-              >
+              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "rgba(212,160,18,0.8)" }}>
                 Listing title
               </div>
-              <p
-                className="text-lg font-medium mb-5 italic"
-                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#F5E09A" }}
-              >
+              <p className="text-lg font-medium mb-5 italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "#F5E09A" }}>
                 "Caldera Sunsets · Private Pool · Adults-Only Hideaway"
               </p>
-              <div
-                className="text-xs uppercase tracking-wider mb-2"
-                style={{ color: "rgba(212,160,18,0.8)" }}
-              >
+              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "rgba(212,160,18,0.8)" }}>
                 Tagline
               </div>
-              <p
-                className="text-lg italic"
-                style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(255,255,255,0.85)" }}
-              >
+              <p className="text-lg italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "rgba(255,255,255,0.85)" }}>
                 "Where the Aegean meets your private horizon."
               </p>
             </div>
             <div>
-              <div
-                className="text-xs uppercase tracking-wider mb-2"
-                style={{ color: "rgba(212,160,18,0.8)" }}
-              >
+              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "rgba(212,160,18,0.8)" }}>
                 Instagram caption — Sunday
               </div>
               <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.75)" }}>
@@ -506,6 +497,43 @@ function Index() {
                 </span>
               </p>
             </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── ABOUT ── */}
+      <section id="about" className="container mx-auto max-w-4xl px-5 pb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="rounded-2xl p-10 sm:p-14 text-center"
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(201,148,10,0.2)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(212,160,18,0.8)" }}>
+            About Medier AI
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-medium mb-6" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+            Built for Greek hospitality
+          </h2>
+          <p className="text-base leading-relaxed max-w-2xl mx-auto mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+            Medier AI was created to solve a real problem: Greek hospitality owners — villas, taverns, boutique hotels — spend hours writing marketing content that rarely goes viral and often misses the mark with international guests.
+          </p>
+          <p className="text-base leading-relaxed max-w-2xl mx-auto mb-4" style={{ color: "rgba(255,255,255,0.65)" }}>
+            We built an AI that thinks like an elite Greek tourism copywriter. It understands the language of Santorini sunsets, Cretan taverns, Mykonos nightlife, and everything in between — and generates content that converts visitors into bookings.
+          </p>
+          <p className="text-base leading-relaxed max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
+            From Airbnb listings to Instagram reels to Google Ads — one form, 30 seconds, your entire marketing presence done.
+          </p>
+          <div className="mt-8">
+            <a href="mailto:support.medierai@gmail.com" className="text-sm hover:underline" style={{ color: "rgba(212,160,18,0.8)" }}>
+              support.medierai@gmail.com
+            </a>
           </div>
         </motion.div>
       </section>
@@ -524,22 +552,11 @@ function Index() {
         </motion.h2>
         <Accordion type="single" collapsible className="space-y-2">
           {[
-            {
-              q: "How long does a pack take?",
-              a: "Usually 15–30 seconds. One click, one form, all five channels at once.",
-            },
-            {
-              q: "Can I get content in Greek?",
-              a: "Yes — choose Greek only, English only, or both side by side.",
-            },
-            {
-              q: "Is it really free to start?",
-              a: "Yes. Your first pack is free, no credit card needed. Upgrade from €25/month for more packs and auto-posting.",
-            },
-            {
-              q: "Who writes the copy?",
-              a: "An AI fine-tuned to act as an elite Greek hospitality copywriter. You can always edit before publishing.",
-            },
+            { q: "How long does a pack take?", a: "Usually 15–30 seconds. One click, one form, all five channels at once." },
+            { q: "Can I get content in Greek?", a: "Yes — choose Greek only, English only, or both side by side." },
+            { q: "Is it really free to start?", a: "Yes. Your first 3 packs are free, no credit card needed. Upgrade from €25/month for more packs and auto-posting." },
+            { q: "Who writes the copy?", a: "An AI fine-tuned to act as an elite Greek hospitality copywriter. You can always edit before publishing." },
+            { q: "Can I cancel my subscription?", a: "Yes, anytime. You keep access until the end of your billing period. No questions asked." },
           ].map((f) => (
             <AccordionItem
               key={f.q}
@@ -577,12 +594,10 @@ function Index() {
             border: "1px solid rgba(201,148,10,0.3)",
           }}
         >
-          {/* Glow */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background:
-                "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(201,148,10,0.15), transparent)",
+              background: "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(201,148,10,0.15), transparent)",
             }}
           />
           <h2
@@ -610,13 +625,128 @@ function Index() {
 
       {/* ── FOOTER ── */}
       <footer
-        className="py-6 text-center text-xs"
-        style={{
-          borderTop: "1px solid rgba(201,148,10,0.15)",
-          color: "rgba(255,255,255,0.3)",
-        }}
+        className="relative mt-auto"
+        style={{ borderTop: "1px solid rgba(201,148,10,0.15)" }}
       >
-        © {new Date().getFullYear()} MedierAI · For the hospitality of Greece
+        <div className="container mx-auto max-w-6xl px-5 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10">
+
+            {/* Brand */}
+            <div>
+              <div className="mb-3">
+                <Logo />
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.4)" }}>
+                AI-crafted marketing packs for Greek hospitality businesses. Villas, taverns, boutique hotels — done in 30 seconds.
+              </p>
+              
+               <a href="mailto:support.medierai@gmail.com"
+                className="text-xs mt-3 block hover:underline"
+                style={{ color: "rgba(212,160,18,0.7)" }}
+              >
+                support.medierai@gmail.com
+              </a>
+            </div>
+
+            {/* Product */}
+            <div>
+              <div className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(212,160,18,0.6)" }}>
+                Product
+              </div>
+              <div className="space-y-2">
+                {[
+                  { label: "Features", action: () => scrollTo("features") },
+                  { label: "Pricing", href: "/pricing" },
+                  { label: "About", action: () => scrollTo("about") },
+                  { label: "Sign in", href: "/auth" },
+                ].map((item) => (
+                  item.href ? (
+                    <Link
+                      key={item.label}
+                      to={item.href as any}
+                      className="block text-sm transition-colors hover:text-[#D4A012]"
+                      style={{ color: "rgba(255,255,255,0.5)" }}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.label}
+                      onClick={item.action}
+                      className="block text-sm transition-colors hover:text-[#D4A012] text-left"
+                      style={{ color: "rgba(255,255,255,0.5)" }}
+                    >
+                      {item.label}
+                    </button>
+                  )
+                ))}
+              </div>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <div className="text-xs uppercase tracking-widest mb-4" style={{ color: "rgba(212,160,18,0.6)" }}>
+                Legal
+              </div>
+              <div className="space-y-2">
+                <Link
+                  to="/terms"
+                  className="block text-sm transition-colors hover:text-[#D4A012]"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  Terms of Service
+                </Link>
+                <Link
+                  to="/privacy"
+                  className="block text-sm transition-colors hover:text-[#D4A012]"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  Privacy Policy
+                </Link>
+                
+                <a  href="mailto:support.medierai@gmail.com"
+                  className="block text-sm transition-colors hover:text-[#D4A012]"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
+                >
+                  Contact us
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div
+            className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3"
+            style={{ borderTop: "1px solid rgba(201,148,10,0.1)" }}
+          >
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+              © {new Date().getFullYear()} Medier AI · For the hospitality of Greece
+            </p>
+            <div className="flex items-center gap-4">
+              <Link
+                to="/terms"
+                className="text-xs hover:text-[#D4A012] transition-colors"
+                style={{ color: "rgba(255,255,255,0.25)" }}
+              >
+                Terms
+              </Link>
+              <Link
+                to="/privacy"
+                className="text-xs hover:text-[#D4A012] transition-colors"
+                style={{ color: "rgba(255,255,255,0.25)" }}
+              >
+                Privacy
+              </Link>
+              
+               <a href="mailto:support.medierai@gmail.com"
+                className="text-xs hover:text-[#D4A012] transition-colors"
+                style={{ color: "rgba(255,255,255,0.25)" }}
+              >
+                support.medierai@gmail.com
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
