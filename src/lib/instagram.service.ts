@@ -6,6 +6,8 @@ export type InstagramCredentials = {
   instagramUsername: string;
 };
 
+const SITE_URL = "https://host-writer-demo.vercel.app";
+
 // ── Credentials ────────────────────────────────────────────────────────────
 export async function saveInstagramCredentials(credentials: InstagramCredentials) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,6 +22,7 @@ export async function saveInstagramCredentials(credentials: InstagramCredentials
         access_token: credentials.accessToken,
         account_id: credentials.instagramBusinessAccountId,
         account_username: credentials.instagramUsername,
+        updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,platform" }
     );
@@ -36,7 +39,7 @@ export async function getInstagramCredentials(): Promise<InstagramCredentials | 
     .select("*")
     .eq("user_id", user.id)
     .eq("platform", "instagram")
-    .maybeSingle(); // 👈 αυτό αλλάζει
+    .maybeSingle();
 
   if (!data) return null;
 
@@ -45,6 +48,30 @@ export async function getInstagramCredentials(): Promise<InstagramCredentials | 
     instagramBusinessAccountId: data.account_id,
     instagramUsername: data.account_username,
   };
+}
+
+// ── Refresh long-lived token ───────────────────────────────────────────────
+export async function refreshInstagramToken(): Promise<boolean> {
+  const credentials = await getInstagramCredentials();
+  if (!credentials) return false;
+
+  try {
+    const res = await fetch(
+      `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${credentials.accessToken}`
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    await saveInstagramCredentials({
+      ...credentials,
+      accessToken: data.access_token,
+    });
+
+    return true;
+  } catch (err) {
+    console.error("Token refresh failed:", err);
+    return false;
+  }
 }
 
 // ── Upload image to Supabase Storage → get public URL ─────────────────────
@@ -78,9 +105,13 @@ export function formatInstagramCaption(
   vibe: string
 ): string {
   const vibeEmoji: Record<string, string> = {
-    Luxury: "✨", "Family-friendly": "👨‍👩‍👧‍👦",
-    Romantic: "💕", Rustic: "🌾", Modern: "🏢",
-    Boho: "🌸", Minimalist: "🤍",
+    Luxury: "✨",
+    "Family-friendly": "👨‍👩‍👧‍👦",
+    Romantic: "💕",
+    Rustic: "🌾",
+    Modern: "🏢",
+    Boho: "🌸",
+    Minimalist: "🤍",
   };
 
   const emoji = vibeEmoji[vibe] ?? "✨";
@@ -115,6 +146,9 @@ export async function postToInstagramFeed(
   caption: string,
   imageUrl: string
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
+  // Προσπάθησε να ανανεώσεις το token πρώτα
+  await refreshInstagramToken();
+
   const credentials = await getInstagramCredentials();
   if (!credentials) {
     return { success: false, error: "Instagram not connected." };
@@ -200,7 +234,6 @@ export async function getInstagramInsights(plan: string) {
       return { basic: account };
     }
 
-    // Pro: reach + impressions
     const insightsRes = await fetch(
       `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/insights?metric=reach,impressions&period=day&since=${Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000)}&until=${Math.floor(Date.now() / 1000)}&access_token=${credentials.accessToken}`
     );
@@ -210,7 +243,6 @@ export async function getInstagramInsights(plan: string) {
       return { basic: account, insights: insights.data };
     }
 
-    // Max: also top media
     const mediaRes = await fetch(
       `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/media?fields=id,caption,like_count,comments_count,timestamp,media_url,permalink&limit=9&access_token=${credentials.accessToken}`
     );
@@ -223,7 +255,6 @@ export async function getInstagramInsights(plan: string) {
   }
 }
 
-// ── OAuth URL ──────────────────────────────────────────────────────────────
 // ── OAuth URL ──────────────────────────────────────────────────────────────
 export function getInstagramOAuthUrl(redirectUri: string): string {
   const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID;

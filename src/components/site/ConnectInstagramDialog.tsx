@@ -1,10 +1,18 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getInstagramOAuthUrl } from "@/lib/instagram.service";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 export function ConnectInstagramDialog({
   open,
@@ -34,16 +42,22 @@ export function ConnectInstagramDialog({
   }, []);
 
   const handleOAuthConnect = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       toast.error("Please log in first");
       return;
     }
 
-    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-oauth`;
-    const oauthUrl = getInstagramOAuthUrl(redirectUri);
+    // Redirect URI → το Supabase Edge Function
+    const redirectUri = `${SUPABASE_URL}/functions/v1/instagram-oauth`;
 
+    const oauthUrl = getInstagramOAuthUrl(redirectUri);
     const url = new URL(oauthUrl);
+
+    // Περνάμε το access token ως state για να ταυτοποιήσουμε τον χρήστη στο Edge Function
     url.searchParams.set("state", session.access_token);
 
     window.location.href = url.toString();
@@ -63,7 +77,8 @@ export function ConnectInstagramDialog({
           <div className="space-y-4">
             <div className="rounded-lg bg-gold/5 border border-gold/20 p-4">
               <p className="text-sm text-muted-foreground">
-                Συνδέσου με τον Instagram Business λογαριασμό σου με ένα κλικ. Δεν χρειάζεται να αντιγράψεις tokens.
+                Συνδέσου με τον Instagram Business λογαριασμό σου με ένα κλικ.
+                Δεν χρειάζεται να αντιγράψεις tokens.
               </p>
             </div>
 
@@ -71,7 +86,8 @@ export function ConnectInstagramDialog({
               className="w-full h-12 gradient-gold text-background font-medium text-base"
               onClick={handleOAuthConnect}
             >
-              <Instagram className="size-5 mr-2" /> Connect with Instagram
+              <Instagram className="size-5 mr-2" />
+              Connect with Instagram
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">

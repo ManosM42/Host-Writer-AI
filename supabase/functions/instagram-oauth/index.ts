@@ -5,107 +5,112 @@ const INSTAGRAM_APP_ID = Deno.env.get("INSTAGRAM_APP_ID")!;
 const INSTAGRAM_APP_SECRET = Deno.env.get("INSTAGRAM_APP_SECRET")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const SITE_URL = Deno.env.get("SITE_URL")!;
 
-// The redirect URI must exactly match what's registered in your Instagram app dashboard
+// ✅ Hardcoded — το σωστό production URL
+const SITE_URL = "https://host-writer-demo.vercel.app";
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/instagram-oauth`;
 
 serve(async (req) => {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state"); // Supabase JWT passed from frontend
+  const state = url.searchParams.get("state");
 
-  // Handle direct visits or missing params gracefully
   if (!code || !state) {
-    return new Response(
-      JSON.stringify({ error: "Missing code or state. This endpoint is an OAuth callback." }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+    return Response.redirect(
+      `${SITE_URL}/dashboard?ig=error&message=${encodeURIComponent("Missing code or state.")}`,
+      302
     );
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    // 1. Verify the JWT (passed as state) and get the user
+    // 1. Verify user JWT from state
     const { data: { user }, error: authError } = await supabase.auth.getUser(state);
-    if (authError || !user) {
-      throw new Error("Invalid or expired session. Please reconnect.");
-    }
+    if (authError || !user) throw new Error("Invalid or expired session.");
 
-    // 2. Exchange the code for a short-lived access token
-    const tokenRes = await fetch("https://api.instagram.com/oauth/access_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: INSTAGRAM_APP_ID,
-        client_secret: INSTAGRAM_APP_SECRET,
-        grant_type: "authorization_code",
-        redirect_uri: REDIRECT_URI,
-        code,
-      }),
-    });
-
+    // 2. Exchange code for Facebook access token
+    const tokenRes = await fetch(
+      `https://graph.facebook.com/v20.0/oauth/access_token?` +
+        new URLSearchParams({
+          client_id: INSTAGRAM_APP_ID,
+          client_secret: INSTAGRAM_APP_SECRET,
+          redirect_uri: REDIRECT_URI,
+          code,
+        })
+    );
     const tokenData = await tokenRes.json();
-    if (tokenData.error_type) {
-      throw new Error(`Instagram token error: ${tokenData.error_message}`);
-    }
+    if (tokenData.error) throw new Error(`Token error: ${tokenData.error.message}`);
 
-    const shortToken: string = tokenData.access_token;
-    const igUserId: string = String(tokenData.user_id);
+    const fbToken: string = tokenData.access_token;
 
-    // 3. Exchange short-lived token for a long-lived token (valid 60 days)
-    const longTokenRes = await fetch(
-      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${INSTAGRAM_APP_SECRET}&access_token=${shortToken}`
+    // 3. Get Facebook Pages
+    const pagesRes = await fetch(
+      `https://graph.facebook.com/v20.0/me/accounts?access_token=${fbToken}`
     );
-    const longTokenData = await longTokenRes.json();
-    if (longTokenData.error) {
-      throw new Error(`Long-lived token error: ${longTokenData.error.message}`);
+    const pagesData = await pagesRes.json();
+    if (pagesData.error) throw new Error(`Pages error: ${pagesData.error.message}`);
+
+    if (!pagesData.data || pagesData.data.length === 0) {
+      throw new Error(
+        "No Facebook Pages found. Make sure your account manages at least one Page."
+      );
     }
 
-    const longToken: string = longTokenData.access_token;
+    // 4. Find the Instagram Business Account connected to a Page
+    let igAccountId: string | null = null;
+    let igUsername: string | null = null;
+    let pageToken: string | null = null;
 
-    // 4. Fetch Instagram username
-    const profileRes = await fetch(
-      `https://graph.instagram.com/v20.0/${igUserId}?fields=username&access_token=${longToken}`
-    );
-    const profile = await profileRes.json();
-    if (profile.error) {
-      throw new Error(`Profile fetch error: ${profile.error.message}`);
+    for (const page of pagesData.data) {
+      const igRes = await fetch(
+        `https://graph.facebook.com/v20.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+      );
+      const igData = await igRes.json();
+
+      if (igData.instagram_business_account) {
+        igAccountId = igData.instagram_business_account.id;
+        pageToken = page.access_token;
+
+        // 5. Get Instagram username
+        const profileRes = await fetch(
+          `https://graph.facebook.com/v20.0/${igAccountId}?fields=username&access_token=${pageToken}`
+        );
+        const profile = await profileRes.json();
+        igUsername = profile.username ?? null;
+        break;
+      }
     }
 
-    // 5. Save (or update) the integration in your database
+    if (!igAccountId || !pageToken) {
+      throw new Error(
+        "No Instagram Business account found. Make sure your Instagram is connected to a Facebook Page."
+      );
+    }
+
+    // 6. Save to database
     const { error: dbError } = await supabase.from("user_integrations").upsert(
       {
         user_id: user.id,
         platform: "instagram",
-        access_token: longToken,
-        account_id: igUserId,
-        account_username: profile.username,
+        access_token: pageToken,
+        account_id: igAccountId,
+        account_username: igUsername,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,platform" }
     );
+    if (dbError) throw new Error(`Database error: ${dbError.message}`);
 
-    if (dbError) {
-      throw new Error(`Database error: ${dbError.message}`);
-    }
-
-    // 6. Redirect to dashboard with success
-    return new Response(null, {
-      status: 302,
-      headers: { Location: `${SITE_URL}/dashboard?ig=connected` },
-    });
+    // 7. Redirect back to dashboard ✅
+    return Response.redirect(`${SITE_URL}/dashboard?ig=connected`, 302);
 
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error occurred";
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error("Instagram OAuth error:", message);
-
-    // Redirect to dashboard with error message
-    return new Response(null, {
-      status: 302,
-      headers: {
-        Location: `${SITE_URL}/dashboard?ig=error&message=${encodeURIComponent(message)}`,
-      },
-    });
+    return Response.redirect(
+      `${SITE_URL}/dashboard?ig=error&message=${encodeURIComponent(message)}`,
+      302
+    );
   }
 });
