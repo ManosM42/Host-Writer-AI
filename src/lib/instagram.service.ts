@@ -36,7 +36,7 @@ export async function getInstagramCredentials(): Promise<InstagramCredentials | 
     .select("*")
     .eq("user_id", user.id)
     .eq("platform", "instagram")
-    .single();
+    .maybeSingle(); // 👈 αυτό αλλάζει
 
   if (!data) return null;
 
@@ -231,9 +231,9 @@ export function getInstagramOAuthUrl(redirectUri: string): string {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights",
     response_type: "code",
+    scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
   });
 
-  return `https://api.instagram.com/oauth/authorize?${params}`;
+  return `https://www.facebook.com/v20.0/dialog/oauth?${params}`;
 }
