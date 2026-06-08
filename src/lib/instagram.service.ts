@@ -123,7 +123,7 @@ export async function postToInstagramFeed(
   try {
     // Step 1: Create media container
     const containerRes = await fetch(
-      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media`,
+      `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/media`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,7 +144,7 @@ export async function postToInstagramFeed(
 
     // Step 2: Publish
     const publishRes = await fetch(
-      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media_publish`,
+      `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/media_publish`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -190,19 +190,19 @@ export async function getInstagramInsights(plan: string) {
   if (!credentials) return null;
 
   try {
-    // Basic: follower count + recent media count
     const accountRes = await fetch(
-      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}?fields=followers_count,media_count,username&access_token=${credentials.accessToken}`
+      `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}?fields=followers_count,media_count,username&access_token=${credentials.accessToken}`
     );
     const account = await accountRes.json();
+    if (account.error) throw new Error(account.error.message);
 
     if (plan === "starter" || plan === "free") {
       return { basic: account };
     }
 
-    // Pro: add reach + impressions from last 30 days
+    // Pro: reach + impressions
     const insightsRes = await fetch(
-      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/insights?metric=reach,impressions,profile_views&period=day&since=${Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000)}&until=${Math.floor(Date.now() / 1000)}&access_token=${credentials.accessToken}`
+      `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/insights?metric=reach,impressions&period=day&since=${Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000)}&until=${Math.floor(Date.now() / 1000)}&access_token=${credentials.accessToken}`
     );
     const insights = await insightsRes.json();
 
@@ -210,9 +210,9 @@ export async function getInstagramInsights(plan: string) {
       return { basic: account, insights: insights.data };
     }
 
-    // Max: also fetch top media
+    // Max: also top media
     const mediaRes = await fetch(
-      `https://graph.instagram.com/v18.0/${credentials.instagramBusinessAccountId}/media?fields=id,caption,like_count,comments_count,timestamp,media_url,permalink&limit=9&access_token=${credentials.accessToken}`
+      `https://graph.facebook.com/v20.0/${credentials.instagramBusinessAccountId}/media?fields=id,caption,like_count,comments_count,timestamp,media_url,permalink&limit=9&access_token=${credentials.accessToken}`
     );
     const media = await mediaRes.json();
 
