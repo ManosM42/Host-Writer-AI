@@ -224,6 +224,7 @@ export async function getInstagramInsights(plan: string) {
 }
 
 // ── OAuth URL ──────────────────────────────────────────────────────────────
+// ── OAuth URL ──────────────────────────────────────────────────────────────
 export function getInstagramOAuthUrl(redirectUri: string): string {
   const clientId = import.meta.env.VITE_INSTAGRAM_APP_ID;
   if (!clientId) throw new Error("Instagram App ID not configured");
@@ -232,7 +233,13 @@ export function getInstagramOAuthUrl(redirectUri: string): string {
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: "instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement",
+    scope: [
+      "instagram_basic",
+      "instagram_content_publish",
+      "instagram_manage_insights",
+      "pages_show_list",
+      "pages_read_engagement",
+    ].join(","),
   });
 
   return `https://www.facebook.com/v20.0/dialog/oauth?${params}`;
