@@ -40,9 +40,8 @@ serve(async (req) => {
     const appSecret = Deno.env.get('INSTAGRAM_APP_SECRET')
     if (!appSecret) throw new Error("INSTAGRAM_APP_SECRET is missing from Supabase env.")
 
-    // Δυναμικό domain από το request header
-    const origin = req.headers.get('origin') || "https://host-writer-demo.vercel.app"
-    const redirectUriForMeta = `${origin}/dashboard`
+    // Hardcoded Vercel URL για απόλυτη ασφάλεια με τη Meta
+    const redirectUriForMeta = "https://host-writer-demo.vercel.app/dashboard"
 
     console.log("Exchanging code with Meta using Redirect URI:", redirectUriForMeta)
 
@@ -80,7 +79,7 @@ serve(async (req) => {
     if (accountsData.error) throw new Error(`Facebook page query error: ${accountsData.error.message}`)
     
     let instagramBusinessId = null
-    let instagramUsername = "Connected Business Account"
+    let instagramUsername = "Connected Account (No Business Setup)"
 
     for (const page of accountsData.data || []) {
       const igRes = await fetch(`https://graph.facebook.com/v20.0/${page.id}?fields=instagram_business_account&access_token=${longToken}`)
@@ -95,8 +94,11 @@ serve(async (req) => {
       }
     }
 
+    // ⚡ SAFE MODE FIX: Αν δεν βρει Instagram Business account, ΔΕΝ κρασάρει. 
+    // Βάζει generic τιμές ώστε να σωθεί το token του χρήστη στη βάση!
     if (!instagramBusinessId) {
-      throw new Error("No Instagram Business account found linked to your Facebook page.")
+      console.warn("WARNING: No Instagram Business account linked. Saving in safe-mode.");
+      instagramBusinessId = "pending_instagram_link"
     }
 
     // 4. Αποθήκευση στη βάση δεδομένων
@@ -107,7 +109,7 @@ serve(async (req) => {
         platform: "instagram",
         access_token: longToken,
         account_id: instagramBusinessId,
-        account_username: instagramUsername, // ⚡ Τώρα η στήλη υπάρχει!
+        account_username: instagramUsername,
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,platform" })
 
