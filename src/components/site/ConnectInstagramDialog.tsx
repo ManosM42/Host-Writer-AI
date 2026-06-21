@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getInstagramOAuthUrl } from "@/lib/instagram.service";
 
+// Σιγουρευόμαστε ότι τραβάμε σωστά το Supabase URL
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 export function ConnectInstagramDialog({
@@ -51,16 +51,34 @@ export function ConnectInstagramDialog({
       return;
     }
 
-    // Redirect URI → το Supabase Edge Function
+    // 1. Το endpoint της Supabase που ΠΡΕΠΕΙ να χτυπήσει η Meta
     const redirectUri = `${SUPABASE_URL}/functions/v1/instagram-oauth`;
 
-    const oauthUrl = getInstagramOAuthUrl(redirectUri);
-    const url = new URL(oauthUrl);
+    // 2. Το App ID σου (Hardcoded για ασφάλεια)
+    const appId = "1504992394453563";
 
-    // Περνάμε το access token ως state για να ταυτοποιήσουμε τον χρήστη στο Edge Function
-    url.searchParams.set("state", session.access_token);
+    // 3. Τα απαραίτητα permissions για να διαβάζεις σελίδες και να κάνεις post στο Instagram
+    const scopes = [
+      "instagram_basic",
+      "instagram_content_publish",
+      "pages_show_list",
+      "pages_read_engagement"
+    ].join(",");
 
-    window.location.href = url.toString();
+    // 4. Χτίσιμο του επίσημου Facebook OAuth URL (Από εδώ παίρνουμε τα σωστά tokens)
+    const oauthUrl = new URL("https://www.facebook.com/v20.0/dialog/oauth");
+    oauthUrl.searchParams.set("client_id", appId);
+    oauthUrl.searchParams.set("redirect_uri", redirectUri);
+    oauthUrl.searchParams.set("scope", scopes);
+    oauthUrl.searchParams.set("response_type", "code");
+    
+    // Περνάμε το Supabase session token στο 'state' για να ξέρει το Edge Function ποιος χρήστης είσαι
+    oauthUrl.searchParams.set("state", session.access_token);
+
+    console.log("Redirecting to Meta OAuth via URL:", oauthUrl.toString());
+
+    // Ανακατεύθυνση στη Meta
+    window.location.href = oauthUrl.toString();
   };
 
   return (
@@ -91,7 +109,7 @@ export function ConnectInstagramDialog({
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
-              Θα ανακατευθυνθείς στο Instagram για να εγκρίνεις τα permissions.
+              Θα ανακατευθυνθείς στο Facebook/Instagram για να εγκρίνεις τα permissions.
             </p>
           </div>
         )}
