@@ -9,7 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Sparkles, X, Image as ImageIcon, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// 1. Καθολική Λίστα Επιχειρήσεων για την Ελλάδα με Categorization
+// 1. Comprehensive Business Configuration for the Greek Market
 export type BusinessConfig = {
   id: string;
   label: string;
@@ -22,29 +22,29 @@ export type BusinessConfig = {
 
 const ALL_BUSINESS_TYPES: BusinessConfig[] = [
   // Hospitality & Gastro
-  { id: "villa", label: "Βίλα / Πολυτελές Κατάλυμα (Villa)", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Ιδιωτική πισίνα, θέα θάλασσα, adults only, free transfer...", defaultVibe: "Luxury", defaultAudience: "International tourists" },
-  { id: "hotel", label: "Boutique Ξενοδοχείο", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Κεντρική τοποθεσία, χειροποίητο πρωινό, roof garden bar...", defaultVibe: "Modern", defaultAudience: "Both" },
-  { id: "tavern", label: "Παραδοσιακή Ταβέρνα", category: "Hospitality & Gastro", isTrending: false, placeholderFeatures: "Ζωντανή μουσική, αυθεντικές ελληνικές γεύσεις, αυλή, ντόπια κρέατα...", defaultVibe: "Rustic", defaultAudience: "Both" },
-  { id: "restaurant", label: "Modern Restaurant / Gastronomy", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Fine dining, fusion ελληνική κουζίνα, ενημερωμένη λίστα κρασιών...", defaultVibe: "Romantic", defaultAudience: "Both" },
-  { id: "cafe_bar", label: "Café / Bar / Beach Bar", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Signature cocktails, specialty coffee, DJ sets, μπροστά στο κύμα...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
+  { id: "villa", label: "Luxury Villa / Accommodation", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Private infinity pool, Caldera sunset view, adults-only, complimentary airport transfer...", defaultVibe: "Luxury", defaultAudience: "International tourists" },
+  { id: "hotel", label: "Boutique Hotel", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Central location, organic traditional breakfast, rooftop cocktail bar, wellness packages...", defaultVibe: "Modern", defaultAudience: "Both" },
+  { id: "tavern", label: "Traditional Greek Tavern", category: "Hospitality & Gastro", isTrending: false, placeholderFeatures: "Live acoustic music, authentic local recipes, cozy courtyard, locally sourced meats...", defaultVibe: "Rustic", defaultAudience: "Both" },
+  { id: "restaurant", label: "Modern Restaurant / Fine Dining", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Greek-fusion cuisine, curated wine pairing list, romantic seaside seating...", defaultVibe: "Romantic", defaultAudience: "Both" },
+  { id: "cafe_bar", label: "Café / All-Day Bar / Beach Bar", category: "Hospitality & Gastro", isTrending: true, placeholderFeatures: "Specialty coffee blends, signature mixology, live DJ sets, waterfront sunbeds...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
   
   // Retail & E-commerce
-  { id: "eshop_fashion", label: "E-shop Μόδας (Ρούχα/Παπούτσια)", category: "Retail & E-commerce", isTrending: true, placeholderFeatures: "Δωρεάν μεταφορικά άνω των 50€, fast shipping, ελληνικής ραφής...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
-  { id: "jewelry", label: "Κοσμηματοπωλείο (Jewelry Store)", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Χειροποίητα κοσμήματα, ασήμι 925, custom δημιουργίες, premium συσκευασία...", defaultVibe: "Luxury", defaultAudience: "All / Broad" },
-  { id: "cosmetics", label: "E-shop / Κατάστημα Καλλυντικών", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Vegan προϊόντα, βιολογικά συστατικά, cruelty-free, skin-routine sets...", defaultVibe: "Minimal / Clean", defaultAudience: "Local Greek community" },
-  { id: "concept_store", label: "Concept Store / Δώρα", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Minimal αισθητική, αντικείμενα Ελλήνων σχεδιαστών, eco-friendly...", defaultVibe: "Minimal / Clean", defaultAudience: "Both" },
+  { id: "eshop_fashion", label: "Fashion E-shop (Clothing/Shoes)", category: "Retail & E-commerce", isTrending: true, placeholderFeatures: "Free shipping over €50, designed in Greece, sustainable linen fabrics, next-day delivery...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
+  { id: "jewelry", label: "Jewelry Store / Atelier", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Handcrafted fine jewelry, 925 sterling silver, custom bridal designs, premium packaging...", defaultVibe: "Luxury", defaultAudience: "All / Broad" },
+  { id: "cosmetics", label: "Cosmetics & Skincare Store", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Organic Mediterranean ingredients, vegan & cruelty-free, personalized skin routines...", defaultVibe: "Minimal / Clean", defaultAudience: "Local Greek community" },
+  { id: "concept_store", label: "Concept Store / Gift Shop", category: "Retail & E-commerce", isTrending: false, placeholderFeatures: "Curated minimal aesthetics, local Greek designers, eco-friendly homeware...", defaultVibe: "Minimal / Clean", defaultAudience: "Both" },
   
   // Services & Professionals
-  { id: "real_estate", label: "Μεσιτικό Γραφείο (Real Estate)", category: "Services & Professionals", isTrending: true, placeholderFeatures: "Golden Visa experts, πολυτελή ακίνητα στα νότια προάστια/νησιά...", defaultVibe: "Professional", defaultAudience: "International tourists" },
-  { id: "car_rental", label: "Ενοικιάσεις Αυτοκινήτων / Σκαφών", category: "Services & Professionals", isTrending: false, placeholderFeatures: "Χωρίς εγγύηση πιστωτικής, free παραλαβή από αεροδρόμιο, 24/7 support...", defaultVibe: "Professional", defaultAudience: "International tourists" },
-  { id: "law_accounting", label: "Δικηγορικό / Λογιστικό Γραφείο", category: "Services & Professionals", isTrending: false, placeholderFeatures: "Εξειδίκευση σε εταιρικά, φορολογικές συμβουλές, άμεση ανταπόκριση...", defaultVibe: "Professional", defaultAudience: "Local Greek community" },
-  { id: "education", label: "Φροντιστήριο / Κέντρο Ξένων Γλωσσών", category: "Services & Professionals", isTrending: false, placeholderFeatures: "Διαδραστικοί πίνακες, native speakers, εγγύηση επιτυχίας, e-learning...", defaultVibe: "Family-friendly", defaultAudience: "Local Greek community" },
+  { id: "real_estate", label: "Real Estate Agency", category: "Services & Professionals", isTrending: true, placeholderFeatures: "Golden Visa investment experts, premium commercial spaces, luxury villas in Cyclades...", defaultVibe: "Professional", defaultAudience: "International tourists" },
+  { id: "car_rental", label: "Car & Yacht Rentals", category: "Services & Professionals", isTrending: false, placeholderFeatures: "No credit card deposit required, free airport delivery, 24/7 roadside assistance...", defaultVibe: "Professional", defaultAudience: "International tourists" },
+  { id: "law_accounting", label: "Law / Accounting Firm", category: "Services & Professionals", isTrending: false, placeholderFeatures: "Corporate tax optimization, cross-border legal compliance, rapid digital response...", defaultVibe: "Professional", defaultAudience: "Local Greek community" },
+  { id: "education", label: "Educational Center / Private Tutoring", category: "Services & Professionals", isTrending: false, placeholderFeatures: "Interactive learning models, native speaking instructors, exam prep guarantees...", defaultVibe: "Family-friendly", defaultAudience: "Local Greek community" },
 
   // Health, Wellness & Beauty
-  { id: "hair_salon", label: "Κομμωτήριο / Barber Shop / Νύχια", category: "Health, Wellness & Beauty", isTrending: true, placeholderFeatures: "Balayage experts, επώνυμα προϊόντα, nail art, χαλαρωτική ατμόσφαιρα...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
-  { id: "gym", label: "Γυμναστήριο / CrossFit / Pilates Studio", category: "Health, Wellness & Beauty", isTrending: true, placeholderFeatures: "Personal training, ολιγομελή τμήματα, σύγχρονος εξοπλισμός, nutrition tips...", defaultVibe: "Modern", defaultAudience: "Local Greek community" },
-  { id: "dental", label: "Οδοντιατρείο / Ιατρείο", category: "Health, Wellness & Beauty", isTrending: false, placeholderFeatures: "Ανώδυνη οδοντιατρική, λεύκανση laser, παιδοδοντία, σύγχρονα μηχανήματα...", defaultVibe: "Professional", defaultAudience: "Local Greek community" },
-  { id: "spa", label: "Κέντρο Spa / Μασάζ", category: "Health, Wellness & Beauty", isTrending: false, placeholderFeatures: "Αρωματοθεραπεία, jacuzzi, χαλαρωτικά πακέτα για ζευγάρια...", defaultVibe: "Romantic", defaultAudience: "All / Broad" },
+  { id: "hair_salon", label: "Hair & Beauty Salon / Barber Shop", category: "Health, Wellness & Beauty", isTrending: true, placeholderFeatures: "Balayage and color correction experts, premium hair treatments, urban luxury vibe...", defaultVibe: "Trendy", defaultAudience: "Local Greek community" },
+  { id: "gym", label: "Gym / CrossFit / Pilates Studio", category: "Health, Wellness & Beauty", isTrending: true, placeholderFeatures: "Personal training modules, high-end equipment, small group reformer classes...", defaultVibe: "Modern", defaultAudience: "Local Greek community" },
+  { id: "dental", label: "Dental Clinic / Medical Practice", category: "Health, Wellness & Beauty", isTrending: false, placeholderFeatures: "Painless laser dentistry, cosmetic smile design, state-of-the-art diagnostic tech...", defaultVibe: "Professional", defaultAudience: "Local Greek community" },
+  { id: "spa", label: "Spa Center / Massage Therapy", category: "Health, Wellness & Beauty", isTrending: false, placeholderFeatures: "Holistic aromatherapy, thermal baths, couples relaxation packages...", defaultVibe: "Romantic", defaultAudience: "All / Broad" },
 ];
 
 export type FormValues = {
@@ -83,13 +83,14 @@ export function GenerateForm({
 
   const set = <K extends keyof FormValues>(k: K, val: FormValues[K]) => setV((s) => ({ ...s, [k]: val }));
 
-  // Βρίσκουμε τα configs της τρέχουσας επιλεγμένης επιχείρησης για να αλλάζουμε δυναμικά placeholders
+  // Find the currently selected business configuration to inject dynamic fields
   const currentBiz = ALL_BUSINESS_TYPES.find((b) => b.id === v.businessTypeId) || ALL_BUSINESS_TYPES[0];
 
   const handleBusinessSelect = (id: string) => {
     const selected = ALL_BUSINESS_TYPES.find((b) => b.id === id);
     if (!selected) return;
 
+    // Smart auto-setup: adjust vibe and target audience dynamically based on industry defaults
     setV((s) => ({
       ...s,
       businessTypeId: id,
@@ -141,14 +142,14 @@ export function GenerateForm({
           <Sparkles className="size-3.5" /> Medier AI • Omnichannel Marketing Plan
         </div>
         <h2 className="font-display text-2xl sm:text-3xl">Build your strategic plan</h2>
-        <p className="text-sm text-muted-foreground mt-1">Smart positioning for any business type in Greece.</p>
+        <p className="text-sm text-muted-foreground mt-1">Smart positioning for any business sector in Greece.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Business Name */}
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="bn">Business name</Label>
-          <Input id="bn" required maxLength={120} value={v.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Medier Boutique" />
+          <Input id="bn" required maxLength={120} value={v.businessName} onChange={(e) => set("businessName", e.target.value)} placeholder="e.g. Medier Luxury Boutique" />
         </div>
 
         {/* Searchable Combobox for Business Types */}
@@ -168,12 +169,12 @@ export function GenerateForm({
             </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Search 50+ business types... (e.g. E-shop, Γυμναστήριο)" />
+                <CommandInput placeholder="Search 50+ business types... (e.g. E-shop, Gym, Villa)" />
                 <CommandList>
                   <CommandEmpty>No business type found.</CommandEmpty>
                   
-                  {/* Προτεινόμενα / Trending Section */}
-                  <CommandGroup heading="🔥 Δημοφιλή στην Ελλάδα">
+                  {/* Pinned/Trending Section */}
+                  <CommandGroup heading="🔥 Pinned / Trending in Greece">
                     {ALL_BUSINESS_TYPES.filter(b => b.isTrending).map((biz) => (
                       <CommandItem
                         key={biz.id}
@@ -186,7 +187,7 @@ export function GenerateForm({
                     ))}
                   </CommandGroup>
 
-                  {/* Όλες οι κατηγορίες χωριστά */}
+                  {/* Fully categorised blocks */}
                   {Array.from(new Set(ALL_BUSINESS_TYPES.map(b => b.category))).map((cat) => (
                     <CommandGroup key={cat} heading={cat}>
                       {ALL_BUSINESS_TYPES.filter(b => b.category === cat).map((biz) => (
@@ -207,20 +208,20 @@ export function GenerateForm({
           </Popover>
         </div>
 
-        {/* Location - Δυναμικό Placeholder */}
+        {/* Dynamic Location Placeholder based on industry context */}
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="loc">Location / Target Area</Label>
+          <Label htmlFor="loc">Location / Target Operating Area</Label>
           <Input 
             id="loc" 
             required 
             maxLength={120} 
             value={v.location} 
             onChange={(e) => set("location", e.target.value)} 
-            placeholder={currentBiz.category === "Retail & E-commerce" ? "e.g. Πανελλαδικά (Έδρα: Θεσσαλονίκη)" : "e.g. Γλυφάδα, Αθήνα"} 
+            placeholder={currentBiz.category === "Retail & E-commerce" ? "e.g. Nationwide Delivery (Based in Athens)" : "e.g. Glyfada, Athens"} 
           />
         </div>
 
-        {/* Key Features - Δυναμικό Placeholder βασισμένο στην επιλογή */}
+        {/* Dynamic Key Features Placeholder mapping to selected item */}
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="feat">Key features & Unique Selling Points (USPs)</Label>
           <Textarea 
@@ -234,7 +235,7 @@ export function GenerateForm({
           />
         </div>
 
-        {/* Vibe / Style */}
+        {/* Vibe / Tone of Voice */}
         <div className="space-y-1.5">
           <Label>Vibe / Tone of Voice</Label>
           <Select value={v.vibe} onValueChange={(x) => set("vibe", x as FormValues["vibe"])}>
@@ -273,15 +274,15 @@ export function GenerateForm({
           </Select>
         </div>
 
-        {/* Photos */}
+        {/* Reference Photos */}
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="photos">Reference Images (optional, max 5)</Label>
           <div className="border-2 border-dashed border-gold/30 rounded-lg p-4 text-center hover:border-gold/60 transition-colors cursor-pointer">
             <input id="photos" type="file" multiple accept="image/*" onChange={handlePhotoUpload} className="hidden" />
             <label htmlFor="photos" className="cursor-pointer block">
               <ImageIcon className="size-6 text-gold/60 mx-auto mb-2" />
-              <p className="text-sm text-gold/80">Upload product/space images</p>
-              <p className="text-xs text-muted-foreground mt-1">AI matches copy strategies to your visual assets</p>
+              <p className="text-sm text-gold/80">Upload product or venue images</p>
+              <p className="text-xs text-muted-foreground mt-1">AI matches content strategies directly to your visual identity</p>
             </label>
           </div>
           {(v.photos || []).length > 0 && (
