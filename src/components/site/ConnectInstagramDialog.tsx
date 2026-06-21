@@ -33,7 +33,8 @@ export function ConnectInstagramDialog({
       if (code && state) {
         setLoading(true);
         try {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          // ⚡ ΚΛΕΙΔΩΜΑ URL: Αντικατάσταση του env με το πραγματικό σου Supabase URL
+          const supabaseUrl = "https://aemenzyhoanpnevbjvbt.supabase.co";
           
           // Καλούμε το Edge Function απευθείας από το frontend
           const response = await fetch(`${supabaseUrl}/functions/v1/instagram-oauth?code=${code}&state=${state}`);
@@ -46,20 +47,20 @@ export function ConnectInstagramDialog({
           toast.success("Instagram connected successfully!");
           onConnected?.();
         } catch (err: any) {
-          console.error(err);
+          console.error("OAuth Frontend Error:", err);
           toast.error("Σφάλμα κατά την αποθήκευση στη βάση δεδομένων.");
         } finally {
           setLoading(false);
-          // Καθαρίζουμε το URL
-          url.searchParams.delete("code");
-          url.searchParams.delete("state");
-          window.history.replaceState({}, "", url.toString());
+          // ⚡ ΚΑΘΑΡΙΣΜΟΣ URL: Καθαρίζουμε όμορφα τα params χωρίς να σπάει το router
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, "", cleanUrl);
         }
       }
     };
 
+    // ⚡ ΤΟ FIX: Καλούμε τη σωστή συνάρτηση handleCallback (όχι handleUrlCallback)
     handleCallback();
-  }, []);
+  }, [onConnected]);
 
   const handleOAuthConnect = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -70,8 +71,6 @@ export function ConnectInstagramDialog({
     }
 
     const appId = "1504992394453563";
-    
-    // ⚡ Η ΑΛΛΑΓΗ: Η Meta σε γυρίζει πλέον στο VERCEL, όχι στη Supabase
     const redirectUri = "https://host-writer-demo.vercel.app/dashboard";
 
     const scopes = [
