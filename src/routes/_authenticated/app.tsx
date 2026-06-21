@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sparkles, User } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app")({
-  head: () => ({ meta: [{ title: "Generate — HostWriter AI" }] }),
+  head: () => ({ meta: [{ title: "Generate — MedierAI" }] }),
   component: AppPage,
 });
 

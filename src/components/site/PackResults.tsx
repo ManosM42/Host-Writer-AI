@@ -197,7 +197,7 @@ function downloadPdf(meta: Meta, c: PackContent) {
   };
 
   doc.setFont("helvetica", "bold"); doc.setFontSize(28); doc.setTextColor(201, 168, 76);
-  doc.text("HostWriter AI", margin, y + 10); y += 50;
+  doc.text("MedierAI", margin, y + 10); y += 50;
   doc.setFontSize(20); doc.setTextColor(20, 20, 20); doc.text("Marketing Pack", margin, y); y += 30;
   doc.setFontSize(12); doc.setTextColor(80, 80, 80);
   doc.text(`${meta.businessName} — ${meta.businessType}`, margin, y); y += 16;
@@ -236,7 +236,7 @@ function downloadPdf(meta: Meta, c: PackContent) {
   sub("Meta Ad — Headline"); para(c.ads.metaAd.headline);
   sub("Tagline"); para(c.ads.tagline);
 
-  doc.save(`HostWriter-${meta.businessName.replace(/\s+/g, "-")}.pdf`);
+  doc.save(`MedierAI-${meta.businessName.replace(/\s+/g, "-")}.pdf`);
 }
 
 // ── Main component ─────────────────────────────────────────────────────────

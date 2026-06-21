@@ -5,7 +5,7 @@ import { PackResults, type PackContent } from "@/components/site/PackResults";
 import { getPack } from "@/lib/packs.functions";
 
 export const Route = createFileRoute("/_authenticated/packs/$id")({
-  head: () => ({ meta: [{ title: "Pack — HostWriter AI" }] }),
+  head: () => ({ meta: [{ title: "Pack — MedierAI" }] }),
   component: PackPage,
   errorComponent: ({ error }) => (
     <div className="min-h-screen flex items-center justify-center px-5">
