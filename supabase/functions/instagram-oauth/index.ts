@@ -4,9 +4,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 }
 
 serve(async (req) => {
+  // Διαχείριση CORS για να επιτρέπεται η κλήση από το Vercel frontend
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -16,11 +18,12 @@ serve(async (req) => {
   const stateToken = url.searchParams.get('state') 
   const errorReason = url.searchParams.get('error')
 
-  const FRONTEND_REDIRECT_URL = "https://host-writer-demo.vercel.app/dashboard#_=_" 
-
   if (errorReason || !code || !stateToken) {
     const reason = url.searchParams.get('error_description') || "Authentication canceled"
-    return Response.redirect(`${FRONTEND_REDIRECT_URL}?ig=error&message=${encodeURIComponent(reason)}`, 302)
+    return new Response(JSON.stringify({ error: reason }), { 
+      status: 400, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    })
   }
 
   try {
@@ -29,11 +32,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Ταυτοποίηση του χρήστη μέσω του state token
+    // Ταυτοποίηση του χρήστη μέσω του state token (access token)
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(stateToken)
     if (authError || !user) throw new Error("Could not verify your Supabase session context.")
 
-    // ⚡ HARDCODED το App ID σου για να μην υπάρχει καμία πιθανότητα σφάλματος client_id
     const appId = "1504992394453563" 
     const appSecret = Deno.env.get('INSTAGRAM_APP_SECRET')
 
@@ -41,14 +43,15 @@ serve(async (req) => {
       throw new Error("INSTAGRAM_APP_SECRET is missing from Supabase environment variables.")
     }
 
-    // Το ακριβές URL του Edge Function που δηλώσαμε και στη Meta
-    const currentEdgeUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/instagram-oauth`
+    // ⚡ ΚΡΙΣΙΜΟ: Το redirect_uri εδώ πρέπει να είναι το VERCEL URL, 
+    // γιατί αυτό χρησιμοποιήθηκε για να παραχθεί ο κώδικας στη Meta!
+    const redirectUriForMeta = "https://host-writer-demo.vercel.app/dashboard"
 
-    // 1. Ανταλλαγή code με Short-Lived Token (Χρήση URLSearchParams για σωστό encoding)
+    // 1. Ανταλλαγή code με Short-Lived Token
     const tokenParams = new URLSearchParams({
       client_id: appId,
       client_secret: appSecret,
-      redirect_uri: currentEdgeUrl,
+      redirect_uri: redirectUriForMeta,
       code: code
     })
 
@@ -111,10 +114,17 @@ serve(async (req) => {
 
     if (dbError) throw dbError
 
-    return Response.redirect(`${FRONTEND_REDIRECT_URL}?ig=connected`, 302)
+    // Επιστρέφουμε JSON επιτυχίας στο frontend αντί για redirect
+    return new Response(JSON.stringify({ success: true, username: instagramUsername }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
 
   } catch (error: any) {
     console.error("OAuth edge handler crashed:", error)
-    return Response.redirect(`${FRONTEND_REDIRECT_URL}?ig=error&message=${encodeURIComponent(error.message || "Unknown internal exchange failure")}`, 302)
+    return new Response(JSON.stringify({ error: error.message || "Unknown internal failure" }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
   }
 })
