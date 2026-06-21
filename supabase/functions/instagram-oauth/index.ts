@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Διαχείριση CORS για να επιτρέπεται η κλήση από το Vercel frontend
+  // Διαχείριση CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -32,22 +32,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Ταυτοποίηση του χρήστη μέσω του state token (access token)
+    // Ταυτοποίηση του χρήστη
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(stateToken)
     if (authError || !user) throw new Error("Could not verify your Supabase session context.")
 
     const appId = "1504992394453563" 
     const appSecret = Deno.env.get('INSTAGRAM_APP_SECRET')
+    if (!appSecret) throw new Error("INSTAGRAM_APP_SECRET is missing from Supabase env.")
 
-    if (!appSecret) {
-      throw new Error("INSTAGRAM_APP_SECRET is missing from Supabase environment variables.")
-    }
+    // Δυναμικό domain από το request header
+    const origin = req.headers.get('origin') || "https://host-writer-demo.vercel.app"
+    const redirectUriForMeta = `${origin}/dashboard`
 
-    // ⚡ ΚΡΙΣΙΜΟ: Το redirect_uri εδώ πρέπει να είναι το VERCEL URL, 
-    // γιατί αυτό χρησιμοποιήθηκε για να παραχθεί ο κώδικας στη Meta!
-    const redirectUriForMeta = "https://host-writer-demo.vercel.app/dashboard"
+    console.log("Exchanging code with Meta using Redirect URI:", redirectUriForMeta)
 
-    // 1. Ανταλλαγή code με Short-Lived Token
+    // 1. Ανταλλαγή για Short-Lived Token
     const tokenParams = new URLSearchParams({
       client_id: appId,
       client_secret: appSecret,
@@ -108,13 +107,12 @@ serve(async (req) => {
         platform: "instagram",
         access_token: longToken,
         account_id: instagramBusinessId,
-        account_username: instagramUsername,
+        account_username: instagramUsername, // ⚡ Τώρα η στήλη υπάρχει!
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,platform" })
 
     if (dbError) throw dbError
 
-    // Επιστρέφουμε JSON επιτυχίας στο frontend αντί για redirect
     return new Response(JSON.stringify({ success: true, username: instagramUsername }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
